@@ -5,6 +5,9 @@ package auctionhouse;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.Comparator;
 import java.util.logging.Logger;
 
 /**
@@ -15,6 +18,11 @@ public class AuctionHouseImp implements AuctionHouse {
 
     private static Logger logger = Logger.getLogger("auctionhouse");
     private static final String LS = System.lineSeparator();
+    private List<Buyer> buyers= new ArrayList<Buyer>();
+    private List<Seller> sellers= new ArrayList<Seller>();
+    public SortedSet<Lot> lots = new TreeSet<>(Comparator.comparing(Lot::getLotNumber));
+
+
     
     private String startBanner(String messageName) {
         return  LS 
@@ -33,7 +41,14 @@ public class AuctionHouseImp implements AuctionHouse {
             String bankAccount,
             String bankAuthCode) {
         logger.fine(startBanner("registerBuyer " + name));
-        
+        Buyer buyer= new Buyer(name, bankAccount, bankAuthCode, address);
+        for(Buyer b : buyers){
+            if(b.name.equals(name)){
+            logger.fine(startBanner("registerBuyer " + name + ": FAILED"));
+                return Status.error("The name provided is already in the system");
+            }
+        }
+        buyers.add(buyer);        
         return Status.OK();
     }
 
@@ -42,8 +57,16 @@ public class AuctionHouseImp implements AuctionHouse {
             String address,
             String bankAccount) {
         logger.fine(startBanner("registerSeller " + name));
-        
-        return Status.OK();      
+
+        Seller seller= new Seller(name, bankAccount, address);
+        for(Seller s : sellers){
+            if(s.name.equals(name)){
+            logger.fine(startBanner("registerSeller " + name + ": FAILED"));
+                return Status.error("The name provided is already in the system");
+            }
+        }
+        sellers.add(seller);        
+        return Status.OK();   
     }
 
     public Status addLot(
@@ -52,7 +75,15 @@ public class AuctionHouseImp implements AuctionHouse {
             String description,
             Money reservePrice) {
         logger.fine(startBanner("addLot " + sellerName + " " + number));
-        
+
+        Lot lot= new Lot(sellerName, number, description, LotStatus.UNSOLD, reservePrice);
+        for(Lot l : lots){
+            if(l.getLotNumber()==number){
+            logger.fine(startBanner("Adding lot: FAILED"));
+                return Status.error("The Lot Number assigned already exist in the system");
+            }
+        }
+        lots.add(lot); 
         return Status.OK();    
     }
 
@@ -61,6 +92,9 @@ public class AuctionHouseImp implements AuctionHouse {
         
         List<CatalogueEntry> catalogue = new ArrayList<CatalogueEntry>();
         logger.fine("Catalogue: " + catalogue.toString());
+        for (Lot l: lots){
+            catalogue.add(l);
+        }
         return catalogue;
     }
 
