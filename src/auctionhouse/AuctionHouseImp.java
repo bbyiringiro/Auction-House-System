@@ -5,6 +5,7 @@ package auctionhouse;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.Comparator;
@@ -18,12 +19,10 @@ public class AuctionHouseImp implements AuctionHouse {
 
     private static Logger logger = Logger.getLogger("auctionhouse");
     private static final String LS = System.lineSeparator();
-    private List<Buyer> buyers= new ArrayList<Buyer>();
-    private List<Seller> sellers= new ArrayList<Seller>();
+    public List<Buyer> buyers= new ArrayList<Buyer>();
+    public List<Seller> sellers= new ArrayList<Seller>();
     public SortedSet<Lot> lots = new TreeSet<>(Comparator.comparing(Lot::getLotNumber));
-
-
-    
+    public HashMap<String, List<Integer>> interestedBuyers = new HashMap<String, List<Integer>>();
     private String startBanner(String messageName) {
         return  LS 
           + "-------------------------------------------------------------" + LS
@@ -76,15 +75,36 @@ public class AuctionHouseImp implements AuctionHouse {
             Money reservePrice) {
         logger.fine(startBanner("addLot " + sellerName + " " + number));
 
-        Lot lot= new Lot(sellerName, number, description, LotStatus.UNSOLD, reservePrice);
-        for(Lot l : lots){
-            if(l.getLotNumber()==number){
-            logger.fine(startBanner("Adding lot: FAILED"));
-                return Status.error("The Lot Number assigned already exist in the system");
-            }
+        if(!isUserExist(sellerName)){
+            logger.fine(startBanner("Add lot : FAILED"));
+            return Status.error("The name provided is already in the system");
         }
+
+        if(getLot(number)!=null){
+            logger.fine(startBanner("Adding lot: FAILED"));
+            return Status.error("The Lot Number assigned already exist in the system");
+        }
+        Lot lot= new Lot(sellerName, number, description, LotStatus.UNSOLD, reservePrice);
         lots.add(lot); 
         return Status.OK();    
+    }
+
+    private boolean isUserExist(String user){
+        for(Seller s : sellers){
+            if(s.name.equals(user)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Lot getLot(int lotNumber){
+        for(Lot l : lots){
+            if(l.getLotNumber() == lotNumber){
+                return l;
+            }
+        }
+        return null;
     }
 
     public List<CatalogueEntry> viewCatalogue() {
@@ -102,6 +122,15 @@ public class AuctionHouseImp implements AuctionHouse {
             String buyerName,
             int lotNumber) {
         logger.fine(startBanner("noteInterest " + buyerName + " " + lotNumber));
+            List<Integer> temp = new ArrayList<>();
+            if(interestedBuyers.containsKey(buyerName)){
+                temp= interestedBuyers.get(buyerName);
+                temp.add(lotNumber);
+                interestedBuyers.put(buyerName, temp);
+            }else {
+                temp.add(lotNumber);
+                interestedBuyers.put(buyerName, temp);
+            }
         
         return Status.OK();   
     }
@@ -111,8 +140,18 @@ public class AuctionHouseImp implements AuctionHouse {
             String auctioneerAddress,
             int lotNumber) {
         logger.fine(startBanner("openAuction " + auctioneerName + " " + lotNumber));
-        
-        return Status.OK();
+        Lot lot=getLot(lotNumber);
+        if(lot==null){
+            logger.fine(startBanner("Opening Auction: FAILED"));
+            return Status.error("The Lot Doesn't exist in the system");
+        }
+
+        if(lot.status==LotStatus.UNSOLD){
+            lot.status=LotStatus.IN_AUCTION;
+            return Status.OK();    
+        }else{
+            return Status.error("The lot should be unsold to open Action");
+        }
     }
 
     public Status makeBid(
