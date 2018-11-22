@@ -8,6 +8,7 @@ class Lot extends CatalogueEntry {
         super(lotNumber, description, status);
         this.reservePrice = reservePrice;
         this.sellerName = sellerName;
+
     }
 
     public int getLotNumber() {
@@ -19,5 +20,12 @@ class Lot extends CatalogueEntry {
      */
     public Money getReservePrice() {
         return reservePrice;
+    }
+
+    /**
+     * @return the sellerName
+     */
+    public String getSellerName() {
+        return sellerName;
     }
 }

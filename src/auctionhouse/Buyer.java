@@ -20,7 +20,7 @@ class Buyer extends User{
         return this.address;
     }
 
-    public String getBankAutCode(){
+    public String getBankAuthCode(){
         return this.bankAuthCode;
     }
 }

@@ -6,6 +6,7 @@ class Auction {
     private String time;
     public Hashmap<String, Money> bidderAndBid = new Hashmap<>();
     public Money highestBid;
+    public Buyer highestBidder;
 
     public Auction(Lot l) {
         this.lot = l;
@@ -34,5 +35,19 @@ class Auction {
      */
     public String getTime() {
         return time;
+    }
+
+    /**
+     * @return the highestBidder
+     */
+    public Buyer getHighestBidder() {
+        return highestBidder;
+    }
+
+    /**
+     * @return the highestBid
+     */
+    public Money getHighestBid() {
+        return highestBid;
     }
 }

@@ -21,6 +21,7 @@ public class AuctionHouseImp implements AuctionHouse {
     private static final String LS = System.lineSeparator();
     public List<Buyer> buyers = new ArrayList<Buyer>();
     public List<Seller> sellers = new ArrayList<Seller>();
+    public List<Auctioneer> auctioneers = new ArrayList<Auctioneer>();
     public SortedSet<Lot> lots = new TreeSet<>(Comparator.comparing(Lot::getLotNumber));
     public HashMap<String, List<Integer>> interestedBuyers = new HashMap<String, List<Integer>>();
     public List<Auction> auctionList = new ArrayList<Auction>();
@@ -64,7 +65,7 @@ public class AuctionHouseImp implements AuctionHouse {
     public Status addLot(String sellerName, int number, String description, Money reservePrice) {
         logger.fine(startBanner("addLot " + sellerName + " " + number));
 
-        if (!isUserExist(sellerName, "seller")) {
+        if (getUser(sellerName, "seller") == null) {
             logger.fine(startBanner("Add lot : FAILED"));
             return Status.error("The name provided is already in the system");
         }
@@ -78,22 +79,34 @@ public class AuctionHouseImp implements AuctionHouse {
         return Status.OK();
     }
 
-    private boolean isUserExist(String user, String type) {
-        if (type == "seller") {
+    private User getUser(String user, String type) {
+        switch (type) {
+        case "seller":
             for (Seller s : sellers) {
                 if (s.name.equals(user)) {
-                    return true;
+                    return s;
                 }
             }
-        } else {
-            for (Buyer s : buyers) {
-                if (s.name.equals(user)) {
-                    return true;
+            break;
+        case "buyer":
+            for (Buyer b : buyers) {
+                if (b.name.equals(user)) {
+                    return b;
                 }
             }
+            break;
+        case "auctioneer":
+            for (Auctioneer a : auctioneers) {
+                if (a.name.equals(user)) {
+                    return a;
+                }
+            }
+            break;
+        default:
+            return null;
         }
 
-        return false;
+        return null;
     }
 
     private Lot getLot(int lotNumber) {
@@ -132,6 +145,13 @@ public class AuctionHouseImp implements AuctionHouse {
     }
 
     public Status openAuction(String auctioneerName, String auctioneerAddress, int lotNumber) {
+        Auctioneer auctioneer = getUser(auctioneerName, "auctioneer");
+        if (auctioneer != null) {
+            if (!auctioneer.auctioneerAddress.equals(auctioneerAddress))
+                return Status.error("The auctioneer address and Auctioneer do not match");
+        } else {
+            return Status.error("The auctioneer does not exist");
+        }
         logger.fine(startBanner("openAuction " + auctioneerName + " " + lotNumber));
         Lot lot = getLot(lotNumber);
         if (lot == null) {
@@ -161,7 +181,7 @@ public class AuctionHouseImp implements AuctionHouse {
             logger.fine(startBanner("Make Bid: FAILED"));
             return Status.error("The Lot Doesn't exist in the system");
         }
-        if (!isUserExist(buyerName, "buyer")) {
+        if (getUser(buyerName, "buyer") == null) {
             logger.fine(startBanner("Add lot : FAILED"));
             return Status.error("The buyer name provided is already in the system");
         }
@@ -169,6 +189,8 @@ public class AuctionHouseImp implements AuctionHouse {
             if (a.getLot().getLotNumber() == lotNumber) {
                 if (!bid.lessEqual(a.highestBid)) {
                     a.bidderAndBid.put(buyerName, bid);
+                    a.highestBid = bid;
+                    a.highestBidder = getUser(buyerName, "buyer");
                     return Status.OK();
                 } else {
                     return Status.error("Bid is lower than highest bid");
@@ -186,6 +208,12 @@ public class AuctionHouseImp implements AuctionHouse {
             if (a.getLot().getLotNumber() == lotNumber) {
                 a.setHammerPrice();
                 if (a.getLot().getReservePrice().lessEqual(a.getHammerPrice())) {
+                    Buyer sender = a.getHighestBidder();
+                    Seller receiver = getUser(a.getLot().getSellerName());
+                    if (transfer(sender.getAccount(), sender.getBankAuthCode(), receiver.getAccount,
+                            a.getHighestBid()) == Status.OK) {
+
+                    }
                     // bank transactions
                     // messages all who are interested
                     lot.status = LotStatus.SOLD;
