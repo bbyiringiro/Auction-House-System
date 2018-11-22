@@ -76,7 +76,7 @@ public class MockMessagingService implements MessagingService {
     public void lotUnsold(String address, int lotNumber) {
         String s = makeUnsoldEventString(address, lotNumber);
         logger.finer(s);        
-        actualEvents.add(s);
+        actualEvents.add(s);                                                                        
     }
     /*
      * Test methods

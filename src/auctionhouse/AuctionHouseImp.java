@@ -201,6 +201,7 @@ public class AuctionHouseImp implements AuctionHouse {
     }
 
     public Status closeAuction(String auctioneerName, int lotNumber) {
+        Lot lot = getLot(lotNumber);
         if (lot.status != LotStatus.IN_AUCTION) {
             return Status.error("Lot is not in Auction");
         }
@@ -211,12 +212,14 @@ public class AuctionHouseImp implements AuctionHouse {
                     Buyer sender = a.getHighestBidder();
                     Seller receiver = getUser(a.getLot().getSellerName());
                     if (transfer(sender.getAccount(), sender.getBankAuthCode(), receiver.getAccount,
-                            a.getHighestBid()) == Status.OK) {
-
+                            a.getHighestBid()) == Status.Kind.OK) {
+                        lot.status = LotStatus.SOLD;
+                    }else{
+                        lot.status = LotStatus.SOLD_PENDING_PAYMENT;
                     }
                     // bank transactions
                     // messages all who are interested
-                    lot.status = LotStatus.SOLD;
+                    
 
                 } else {
                     // notify
@@ -227,6 +230,6 @@ public class AuctionHouseImp implements AuctionHouse {
         }
         logger.fine(startBanner("closeAuction " + auctioneerName + " " + lotNumber));
 
-        return Status.OK();
+        return Status.OK(); 
     }
 }

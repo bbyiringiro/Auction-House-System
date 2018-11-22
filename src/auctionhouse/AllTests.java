@@ -19,10 +19,10 @@ import org.junit.runners.Suite.SuiteClasses;
 public class AllTests {
 
     public static void main(String[] args) {
-        if (args.length >= 2){
+        if (args.length >= 2) {
             System.err.println("Unrecognised arguments");
             return;
-        }  else if (args.length == 1) {
+        } else if (args.length == 1) {
             String loggingLevel = args[0];
             if (loggingLevel.equals("off")) {
                 AuctionHouseTest.loggingLevel = Level.OFF;
@@ -36,7 +36,7 @@ public class AllTests {
                 System.err.println("Unrecognised logging level argument: " + loggingLevel);
                 return;
             }
-        } 
+        }
         runJUnitTests();
     }
 
@@ -52,11 +52,8 @@ public class AllTests {
             System.out.println("Number of failed tests: " + result.getFailureCount());
             for (Failure failure : result.getFailures()) {
                 System.out.println(failure.toString());
-            }  
-        } 
+            }
+        }
     }
 
-
-}   
-
-
+}
