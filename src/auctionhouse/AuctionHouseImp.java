@@ -25,6 +25,7 @@ public class AuctionHouseImp implements AuctionHouse {
     public SortedSet<Lot> lots = new TreeSet<>(Comparator.comparing(Lot::getLotNumber));
     public HashMap<String, List<Integer>> interestedBuyers = new HashMap<String, List<Integer>>();
     public List<Auction> auctionList = new ArrayList<Auction>();
+    public Parameters parameters;
 
     private String startBanner(String messageName) {
         return LS + "-------------------------------------------------------------" + LS + "MESSAGE IN: " + messageName
@@ -32,7 +33,7 @@ public class AuctionHouseImp implements AuctionHouse {
     }
 
     public AuctionHouseImp(Parameters parameters) {
-
+        this.parameters = parameters;
     }
 
     public Status registerBuyer(String name, String address, String bankAccount, String bankAuthCode) {
@@ -187,7 +188,7 @@ public class AuctionHouseImp implements AuctionHouse {
         }
         for (Auction a : auctionList) {
             if (a.getLot().getLotNumber() == lotNumber) {
-                if (!bid.lessEqual(a.highestBid)) {
+                if (!bid.lessEqual(a.highestBid.add(this.parameters.increment))) {
                     a.bidderAndBid.put(buyerName, bid);
                     a.highestBid = bid;
                     a.highestBidder = getUser(buyerName, "buyer");
@@ -211,25 +212,37 @@ public class AuctionHouseImp implements AuctionHouse {
                 if (a.getLot().getReservePrice().lessEqual(a.getHammerPrice())) {
                     Buyer sender = a.getHighestBidder();
                     Seller receiver = getUser(a.getLot().getSellerName());
-                    if (transfer(sender.getAccount(), sender.getBankAuthCode(), receiver.getAccount,
-                            a.getHighestBid()) == Status.Kind.OK) {
-                        lot.status = LotStatus.SOLD;
-                    }else{
+
+                    if (transfer(sender.getAccount(), sender.getBankAuthCode(), this.parameters.houseBankAccount,
+                            a.getHighestBid().addPercent(this.parameters.buyerPremium)) == Status.Kind.OK) {
+
+                        if (transfer(this.parameters.houseBankAccount, this.parameters.houseBankAuthCode,
+                                receiver.getAccount(), a.getHighestBid().addPercent(-this.parameters.commission))) {
+                            lot.status = LotStatus.SOLD;
+                            return Status.Kind.SALE;
+                        } else {
+                            lot.status = LotStatus.SOLD_PENDING_PAYMENT;
+                            return Status.Kind.SALE_PENDING_PAYMENT;
+                        }
+
+                    } else {
                         lot.status = LotStatus.SOLD_PENDING_PAYMENT;
+                        return Status.Kind.SALE_PENDING_PAYMENT;
                     }
+
                     // bank transactions
                     // messages all who are interested
-                    
 
                 } else {
                     // notify
                     lot.status = LotStatus.UNSOLD;
+                    return Status.Kind.NO_SALE;
                 }
 
             }
         }
         logger.fine(startBanner("closeAuction " + auctioneerName + " " + lotNumber));
 
-        return Status.OK(); 
+        return Status.OK();
     }
 }
