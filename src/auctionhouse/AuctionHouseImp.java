@@ -15,6 +15,8 @@ import java.util.logging.Logger;
  * @author pbj
  *
  */
+// javac -sourcepath . -cp
+// ../../lib/hamcrest-core-1.3.jar:../../lib/junit-4.12.jar *.java
 public class AuctionHouseImp implements AuctionHouse {
 
     private static Logger logger = Logger.getLogger("auctionhouse");
@@ -146,9 +148,9 @@ public class AuctionHouseImp implements AuctionHouse {
     }
 
     public Status openAuction(String auctioneerName, String auctioneerAddress, int lotNumber) {
-        Auctioneer auctioneer = getUser(auctioneerName, "auctioneer");
+        Auctioneer auctioneer = (Auctioneer) getUser(auctioneerName, "auctioneer");
         if (auctioneer != null) {
-            if (!auctioneer.auctioneerAddress.equals(auctioneerAddress))
+            if (!auctioneer.getAddress().equals(auctioneerAddress))
                 return Status.error("The auctioneer address and Auctioneer do not match");
         } else {
             return Status.error("The auctioneer does not exist");
@@ -198,12 +200,12 @@ public class AuctionHouseImp implements AuctionHouse {
 
                     for (String buyername : interestedBuyers.get(lotNumber)) {
                         this.parameters.messagingService.bidAccepted(getUser(buyername, "buyer").getAddress(),
-                                lotNumber);
+                                lotNumber, bid);
                     }
                     this.parameters.messagingService
-                            .bidAccepted(getUser(a.getLot().getSellerName(), "seller").getAddress(), lotNumber);
+                            .bidAccepted(getUser(a.getLot().getSellerName(), "seller").getAddress(), lotNumber, bid);
                     this.parameters.messagingService.bidAccepted(getUser(a.getAuctioneer(), "auctioneer").getAddress(),
-                            lotNumber);
+                            lotNumber, bid);
 
                     if (interestedBuyers.containsKey(lotNumber)) {
                         temp = interestedBuyers.get(lotNumber);
@@ -216,7 +218,7 @@ public class AuctionHouseImp implements AuctionHouse {
 
                     a.bidderAndBid.put(buyerName, bid);
                     a.highestBid = bid;
-                    a.highestBidder = getUser(buyerName, "buyer");
+                    a.highestBidder = (Buyer) getUser(buyerName, "buyer");
                     return Status.OK();
                 } else {
                     return Status.error("Bid is lower than highest bid");
@@ -236,10 +238,11 @@ public class AuctionHouseImp implements AuctionHouse {
                 a.setHammerPrice();
                 if (a.getLot().getReservePrice().lessEqual(a.getHammerPrice())) {
                     Buyer sender = a.getHighestBidder();
-                    Seller receiver = getUser(a.getLot().getSellerName());
+                    Seller receiver = (Seller) getUser(a.getLot().getSellerName(), "seller");
 
-                    if (transfer(sender.getAccount(), sender.getBankAuthCode(), this.parameters.houseBankAccount,
-                            a.getHighestBid().addPercent(this.parameters.buyerPremium)) == Status.Kind.OK) {
+                    if (this.parameters.bankingService.transfer(sender.getAccount(), sender.getBankAuthCode(),
+                            this.parameters.houseBankAccount,
+                            a.getHighestBid().addPercent(this.parameters.buyerPremium)) == new Status(Status.Kind.OK)) {
                         for (String buyername : interestedBuyers.get(lotNumber)) {
                             this.parameters.messagingService.lotSold(getUser(buyername, "buyer").getAddress(),
                                     lotNumber);
@@ -248,18 +251,20 @@ public class AuctionHouseImp implements AuctionHouse {
                         this.parameters.messagingService
                                 .lotSold(getUser(getLot(lotNumber).getSellerName(), "seller").getAddress(), lotNumber);
 
-                        if (transfer(this.parameters.houseBankAccount, this.parameters.houseBankAuthCode,
-                                receiver.getAccount(), a.getHighestBid().addPercent(-this.parameters.commission))) {
+                        if (this.parameters.bankingService.transfer(this.parameters.houseBankAccount,
+                                this.parameters.houseBankAuthCode, receiver.getAccount(),
+                                a.getHighestBid().addPercent(-this.parameters.commission)) == new Status(
+                                        Status.Kind.OK)) {
                             lot.status = LotStatus.SOLD;
-                            return Status.Kind.SALE;
+                            return new Status(Status.Kind.SALE);
                         } else {
                             lot.status = LotStatus.SOLD_PENDING_PAYMENT;// todo: logging
-                            return Status.Kind.SALE_PENDING_PAYMENT;
+                            return new Status(Status.Kind.SALE_PENDING_PAYMENT);
                         }
 
                     } else {
                         lot.status = LotStatus.SOLD_PENDING_PAYMENT;
-                        return Status.Kind.SALE_PENDING_PAYMENT;
+                        return new Status(Status.Kind.SALE_PENDING_PAYMENT);
                     }
 
                     // bank transactions
@@ -269,12 +274,12 @@ public class AuctionHouseImp implements AuctionHouse {
                     // notify
                     lot.status = LotStatus.UNSOLD;
                     for (String buyername : interestedBuyers.get(lotNumber)) {
-                        this.parameters.messagingService.lotUnSold(getUser(buyername, "buyer").getAddress(), lotNumber);
+                        this.parameters.messagingService.lotUnsold(getUser(buyername, "buyer").getAddress(), lotNumber);
 
                     }
                     this.parameters.messagingService
                             .lotSold(getUser(getLot(lotNumber).getSellerName(), "seller").getAddress(), lotNumber);
-                    return Status.Kind.NO_SALE;
+                    return new Status(Status.Kind.NO_SALE);
                 }
 
             }

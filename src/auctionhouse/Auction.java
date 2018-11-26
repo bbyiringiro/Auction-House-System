@@ -1,10 +1,12 @@
 package auctionhouse;
 
+import java.util.HashMap;
+
 class Auction {
     private Money hammerPrice;
     private Lot lot;
     private String time;
-    public Hashmap<String, Money> bidderAndBid = new Hashmap<>();
+    public HashMap<String, Money> bidderAndBid = new HashMap<String, Money>();
     public Money highestBid;
     public Buyer highestBidder;
     public String auctioneer;
