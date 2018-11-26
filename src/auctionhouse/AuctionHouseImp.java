@@ -23,7 +23,7 @@ public class AuctionHouseImp implements AuctionHouse {
     public List<Seller> sellers = new ArrayList<Seller>();
     public List<Auctioneer> auctioneers = new ArrayList<Auctioneer>();
     public SortedSet<Lot> lots = new TreeSet<>(Comparator.comparing(Lot::getLotNumber));
-    public HashMap<String, List<Integer>> interestedBuyers = new HashMap<String, List<Integer>>();
+    public HashMap<Integer, List<String>> interestedBuyers = new HashMap<>();
     public List<Auction> auctionList = new ArrayList<Auction>();
     public Parameters parameters;
 
@@ -132,14 +132,14 @@ public class AuctionHouseImp implements AuctionHouse {
 
     public Status noteInterest(String buyerName, int lotNumber) {
         logger.fine(startBanner("noteInterest " + buyerName + " " + lotNumber));
-        List<Integer> temp = new ArrayList<>();
-        if (interestedBuyers.containsKey(buyerName)) {
-            temp = interestedBuyers.get(buyerName);
-            temp.add(lotNumber);
-            interestedBuyers.put(buyerName, temp);
+        List<String> temp = new ArrayList<>();
+        if (interestedBuyers.containsKey(lotNumber)) {
+            temp = interestedBuyers.get(lotNumber);
+            temp.add(buyerName);
+            interestedBuyers.put(lotNumber, temp);
         } else {
-            temp.add(lotNumber);
-            interestedBuyers.put(buyerName, temp);
+            temp.add(buyerName);
+            interestedBuyers.put(lotNumber, temp);
         }
 
         return Status.OK();
@@ -163,8 +163,12 @@ public class AuctionHouseImp implements AuctionHouse {
         if (lot.status == LotStatus.UNSOLD) {
             lot.status = LotStatus.IN_AUCTION;
             Auction auction = new Auction(lot);
+            auction.setAuctioneer(auctioneerName);
             auctionList.add(auction);
-            return Status.OK();
+            for (String buyerName : interestedBuyers.get(lotNumber)) {
+                this.parameters.messagingService.auctionOpened(getUser(buyerName, "buyer").getAddress(), lotNumber);
+            }
+            return Status.OK(); // SUCCESS
         } else {
             return Status.error("The lot should be unsold to open Action");
         }
@@ -172,6 +176,7 @@ public class AuctionHouseImp implements AuctionHouse {
     }
 
     public Status makeBid(String buyerName, int lotNumber, Money bid) {
+        List<String> temp = new ArrayList<>();
         logger.fine(startBanner("makeBid " + buyerName + " " + lotNumber + " " + bid));
         Lot lot = getLot(lotNumber);
         if (lot.status != LotStatus.IN_AUCTION) {
@@ -186,9 +191,29 @@ public class AuctionHouseImp implements AuctionHouse {
             logger.fine(startBanner("Add lot : FAILED"));
             return Status.error("The buyer name provided is already in the system");
         }
+
         for (Auction a : auctionList) {
             if (a.getLot().getLotNumber() == lotNumber) {
                 if (!bid.lessEqual(a.highestBid.add(this.parameters.increment))) {
+
+                    for (String buyername : interestedBuyers.get(lotNumber)) {
+                        this.parameters.messagingService.bidAccepted(getUser(buyername, "buyer").getAddress(),
+                                lotNumber);
+                    }
+                    this.parameters.messagingService
+                            .bidAccepted(getUser(a.getLot().getSellerName(), "seller").getAddress(), lotNumber);
+                    this.parameters.messagingService.bidAccepted(getUser(a.getAuctioneer(), "auctioneer").getAddress(),
+                            lotNumber);
+
+                    if (interestedBuyers.containsKey(lotNumber)) {
+                        temp = interestedBuyers.get(lotNumber);
+                        temp.add(buyerName);
+                        interestedBuyers.put(lotNumber, temp);
+                    } else {
+                        temp.add(buyerName);
+                        interestedBuyers.put(lotNumber, temp);
+                    }
+
                     a.bidderAndBid.put(buyerName, bid);
                     a.highestBid = bid;
                     a.highestBidder = getUser(buyerName, "buyer");
@@ -215,13 +240,20 @@ public class AuctionHouseImp implements AuctionHouse {
 
                     if (transfer(sender.getAccount(), sender.getBankAuthCode(), this.parameters.houseBankAccount,
                             a.getHighestBid().addPercent(this.parameters.buyerPremium)) == Status.Kind.OK) {
+                        for (String buyername : interestedBuyers.get(lotNumber)) {
+                            this.parameters.messagingService.lotSold(getUser(buyername, "buyer").getAddress(),
+                                    lotNumber);
+
+                        }
+                        this.parameters.messagingService
+                                .lotSold(getUser(getLot(lotNumber).getSellerName(), "seller").getAddress(), lotNumber);
 
                         if (transfer(this.parameters.houseBankAccount, this.parameters.houseBankAuthCode,
                                 receiver.getAccount(), a.getHighestBid().addPercent(-this.parameters.commission))) {
                             lot.status = LotStatus.SOLD;
                             return Status.Kind.SALE;
                         } else {
-                            lot.status = LotStatus.SOLD_PENDING_PAYMENT;
+                            lot.status = LotStatus.SOLD_PENDING_PAYMENT;// todo: logging
                             return Status.Kind.SALE_PENDING_PAYMENT;
                         }
 
@@ -236,6 +268,12 @@ public class AuctionHouseImp implements AuctionHouse {
                 } else {
                     // notify
                     lot.status = LotStatus.UNSOLD;
+                    for (String buyername : interestedBuyers.get(lotNumber)) {
+                        this.parameters.messagingService.lotUnSold(getUser(buyername, "buyer").getAddress(), lotNumber);
+
+                    }
+                    this.parameters.messagingService
+                            .lotSold(getUser(getLot(lotNumber).getSellerName(), "seller").getAddress(), lotNumber);
                     return Status.Kind.NO_SALE;
                 }
 

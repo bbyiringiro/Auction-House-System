@@ -1,6 +1,7 @@
 package auctionhouse;
 
 class User {
+    protected String address;
     protected String name;
     protected static int id;
     public User(String name){
@@ -14,4 +15,9 @@ class User {
     public String getName(){
         return name;
     }
+    
+    public String getAddress(){
+        return name;
+    }
+    
 }

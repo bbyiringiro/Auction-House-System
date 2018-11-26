@@ -7,6 +7,7 @@ class Auction {
     public Hashmap<String, Money> bidderAndBid = new Hashmap<>();
     public Money highestBid;
     public Buyer highestBidder;
+    public String auctioneer;
 
     public Auction(Lot l) {
         this.lot = l;
@@ -28,6 +29,20 @@ class Auction {
      */
     public Lot getLot() {
         return lot;
+    }
+
+    /**
+     * @param auctioneer the auctioneer to set
+     */
+    public void setAuctioneer(String auctioneer) {
+        this.auctioneer = auctioneer;
+    }
+
+    /**
+     * @return the auctioneer
+     */
+    public String getAuctioneer() {
+        return auctioneer;
     }
 
     /**

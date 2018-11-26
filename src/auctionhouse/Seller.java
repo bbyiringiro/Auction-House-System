@@ -14,7 +14,4 @@ class Seller extends User{
         return this.bankAccount;
     }
 
-    public String getAddress(){
-        return this.address;
-    }
 }
