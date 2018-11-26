@@ -1,16 +1,9 @@
 package auctionhouse;
 
 class Auctioneer extends User {
-    private String address;
 
-    public Auctioneer(String name) {
-        super(name);
+    public Auctioneer(String name, String address) {
+        super(name, address);
     }
 
-    /**
-     * @return the address
-     */
-    public String getAddress() {
-        return address;
-    }
 }

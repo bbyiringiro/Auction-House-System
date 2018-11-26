@@ -2,12 +2,10 @@ package auctionhouse;
 
 class Seller extends User{
     private String bankAccount;
-    private String address;
 
     public Seller(String name, String account, String address){
-        super(name);
+        super(name, address);
         this.bankAccount=account;
-        this.address=address;
     }
 
     public String getAccount(){

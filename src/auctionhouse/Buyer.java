@@ -3,13 +3,11 @@ package auctionhouse;
 class Buyer extends User {
     private String bankAccount;
     private String bankAuthCode;
-    private String address;
 
     public Buyer(String name, String account, String authCode, String address) {
-        super(name);
+        super(name, address);
         this.bankAccount = account;
         this.bankAuthCode = authCode;
-        this.address = address;
     }
 
     public String getAccount() {

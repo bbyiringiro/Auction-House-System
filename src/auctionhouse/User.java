@@ -1,11 +1,12 @@
 package auctionhouse;
 
-class User {
+public class User {
     protected String address;
     protected String name;
     protected static int id;
-    public User(String name){
+    public User(String name, String address){
         id +=1;
+        this.address=address;
         this.name=name;
     }
 
