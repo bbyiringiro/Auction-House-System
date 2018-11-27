@@ -95,7 +95,6 @@ public class MockMessagingService implements MessagingService {
     }
     
     public void verify() {
-
         assertEquals(expectedEvents, actualEvents);
         expectedEvents.clear();
         actualEvents.clear();
