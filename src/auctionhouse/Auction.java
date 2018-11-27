@@ -10,8 +10,9 @@ class Auction {
     public Buyer highestBidder;
     public String auctioneer;
 
-    public Auction(Lot l) {
+    public Auction(Lot l, String initialBid) {
         this.lot = l;
+        this.highestBid= new Money(initialBid);
     }
 
     /**

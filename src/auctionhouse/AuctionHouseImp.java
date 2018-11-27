@@ -161,7 +161,7 @@ public class AuctionHouseImp implements AuctionHouse {
         auctioneers.add(auctioneer);
         if (lot.status == LotStatus.UNSOLD) {
             lot.status = LotStatus.IN_AUCTION;
-            Auction auction = new Auction(lot);
+            Auction auction = new Auction(lot, "0");
             auction.setAuctioneer(auctioneerName);
             auctionList.add(auction);
             for (String buyerName : interestedBuyers.get(lotNumber)) {
@@ -196,6 +196,7 @@ public class AuctionHouseImp implements AuctionHouse {
 
         for (Auction a : auctionList) {
             if (a.getLot().getLotNumber() == lotNumber) {
+            	
                 if (!bid.lessEqual(a.highestBid.add(this.parameters.increment))) {
 
                     for (String buyername : interestedBuyers.get(lotNumber)) {
