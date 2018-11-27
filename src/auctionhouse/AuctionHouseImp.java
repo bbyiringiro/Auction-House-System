@@ -37,7 +37,7 @@ public class AuctionHouseImp implements AuctionHouse {
     public AuctionHouseImp(Parameters parameters) {
         this.parameters = parameters;
     }
-
+    
     public Status registerBuyer(String name, String address, String bankAccount, String bankAuthCode) {
         logger.fine(startBanner("registerBuyer " + name));
         Buyer buyer = new Buyer(name, bankAccount, bankAuthCode, address);
@@ -62,6 +62,7 @@ public class AuctionHouseImp implements AuctionHouse {
             }
         }
         sellers.add(seller);
+        logger.fine(startBanner("registerSeller " + name + ": Success"));
         return Status.OK();
     }
 
@@ -143,25 +144,21 @@ public class AuctionHouseImp implements AuctionHouse {
             temp.add(buyerName);
             interestedBuyers.put(lotNumber, temp);
         }
-
+        
         return Status.OK();
     }
 
     public Status openAuction(String auctioneerName, String auctioneerAddress, int lotNumber) {
-        Auctioneer auctioneer = (Auctioneer) getUser(auctioneerName, "auctioneer");
-        if (auctioneer != null) {
-            if (!auctioneer.getAddress().equals(auctioneerAddress))
-                return Status.error("The auctioneer address and Auctioneer do not match");
-        } else {
-            return Status.error("The auctioneer does not exist");
-        }
+        
+
         logger.fine(startBanner("openAuction " + auctioneerName + " " + lotNumber));
         Lot lot = getLot(lotNumber);
         if (lot == null) {
             logger.fine(startBanner("Opening Auction: FAILED"));
             return Status.error("The Lot Doesn't exist in the system");
         }
-
+        Auctioneer auctioneer = new Auctioneer(auctioneerName, auctioneerAddress);
+        auctioneers.add(auctioneer);
         if (lot.status == LotStatus.UNSOLD) {
             lot.status = LotStatus.IN_AUCTION;
             Auction auction = new Auction(lot);
@@ -170,8 +167,11 @@ public class AuctionHouseImp implements AuctionHouse {
             for (String buyerName : interestedBuyers.get(lotNumber)) {
                 this.parameters.messagingService.auctionOpened(getUser(buyerName, "buyer").getAddress(), lotNumber);
             }
+            this.parameters.messagingService.auctionOpened(getUser(lot.getSellerName(), "seller").getAddress(), lotNumber);
+            logger.fine(startBanner("openAuction " + auctioneerName + " " + lotNumber +": Success"));
             return Status.OK(); // SUCCESS
         } else {
+        	logger.fine(startBanner("openAuction " + auctioneerName + " " + lotNumber +": Failed, The lot should be unsold to open Action"));
             return Status.error("The lot should be unsold to open Action");
         }
 

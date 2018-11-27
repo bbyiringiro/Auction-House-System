@@ -44,14 +44,14 @@ public class MoneyTest {
     }
     @Test  
     public void testAddPercent() {
-        Money val1 = new Money("12.34");
+        Money val1 = new Money("10");
         double percent1 = 10;
         String result1 = val1.addPercent(percent1).toString();
-        assertEquals("13.574", result1);
+        assertEquals("11.00", result1);
         Money val2 = new Money("55");
         double percent2 = 90;
         String result2 = val2.addPercent(percent2).toString();
-        assertEquals("104.5", result2);
+        assertEquals("104.50", result2);
     }
     @Test 
     public void testLessEquals() {
@@ -75,7 +75,7 @@ public class MoneyTest {
         assertEquals(true, result);
         Money val3 = new Money("10.0");
         result = val1.compareTo(val3) < 0;
-        assertEquals(true, result);
+        assertEquals(false, result);
         Money val4 = new Money("12");
         result = val1.compareTo(val4) > 0;
         assertEquals(true, result);
