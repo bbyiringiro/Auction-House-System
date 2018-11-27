@@ -62,7 +62,7 @@ public class Money implements Comparable<Money> {
      * @return Money  new Object of Money as result of the perctage given passed to the method          
      */
     public Money addPercent(double percent) {
-        return new Money(normalise(value * (1 + percent / 100.0)));
+        return new Money(normalise(value * ( 1+ percent / 100.0)));
     }
      /**
      * It prints the value of money with 2 decimal points
