@@ -5,7 +5,6 @@ import java.util.HashMap;
 class Auction {
     private Money hammerPrice;
     private Lot lot;
-    private String time;
     public HashMap<String, Money> bidderAndBid = new HashMap<String, Money>();
     public Money highestBid;
     public Buyer highestBidder;
@@ -47,12 +46,6 @@ class Auction {
         return auctioneer;
     }
 
-    /**
-     * @return the time
-     */
-    public String getTime() {
-        return time;
-    }
 
     /**
      * @return the highestBidder
